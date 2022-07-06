@@ -7,10 +7,13 @@ import (
 	"log"
 	"net/http"
 	"os"
-
+	"github.com/Zemavong/ToDoApp/models"
+	"github.com/joho/godotenv"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var collection *mongo.Collection
@@ -32,7 +35,7 @@ func createDBInstance() {
 	dbName := os.Getenv.("DB_NAME")
 	collNane := os.Getenv("DB_COLLECTION_NAME")
 
-	cleintOptions := options.Client().ApplyURL(connectionString)
+	cleintOptions := options.Client().ApplyURI(connectionString)
 
 	client, err :=mongo.Connect(context.TODO(), cleintOptions)
 
@@ -110,7 +113,7 @@ func deleteAllTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAllTasks() []primitive.M{
-	cur, err := collection.Find(context.Background, bson.D{{}})
+	cur, err := collection.Find(context.Background(), bson.D{{}})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -135,7 +138,7 @@ func getAllTasks() []primitive.M{
 
 func TaskComplete(task string) {
 	id, _ := primitive.ObjectIDFrom
-	filter := bson.M{"_id":}
+	filter := bson.M{"_id":id}
 	update :=  bson.M{"$set":bson.M{"status": true}}
 	result, err := collection.UpdateOne(context.Background(), filter, update)
 	if err := cur.Err(); err != nil {
@@ -144,16 +147,45 @@ func TaskComplete(task string) {
 	fmt.Println("modified count"c result)
 }
 
-func insertOneTask() {
+func insertOneTask(task models.ToDoList) {
+	insertResult, err := collection.InsertOne(context.Background(), task)
 
+	if err := cur.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Inserted a single record", insertResult.InsertID)
 }
 
-func UndoTask() {
+func UndoTask(task string) {
 
+	id, _ := primitive.ObjectIDFromHex
+	filter := bson.M{"_id":id}
+	update :=  bson.M{"$set":bson.M{"status": true}}
+	result, err := collection.UpdateOne(context.Background(), filter, update)
+	if err := cur.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Modifired count: ", result.ModifiredCount)
 }
 
-func deleteOneTask() {
+func deleteOneTask(task string) {
+	id, _ := primitive.ObjectIDFromHex(task)
+	filter :=bson.M{"_id":id}
+	d, err := collection.DeleteOne(context.Background(), filter)
+	if err := cur.Err(); err != nil {
+		log.Fatal(err)
+	}
 
+	fmt.Println("Deleted document", deleteOneTask(task))
 }
 
-func deleteAllTasks
+func deleteAllTasks() int64 {
+	d, err := collection.DeleteMany()
+	if err := cur.Err(); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Deleted documents")
+	return d.DeleteCount
+}
